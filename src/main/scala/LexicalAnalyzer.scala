@@ -1,7 +1,3 @@
-/**
-  * Created by Cypress on 24.02.2017.
-  */
-
 import Tables._
 import scala.io.Source
 import scala.util.control.Breaks._
@@ -14,6 +10,8 @@ package LexicalAnalyzer{
   case class Token(key: Int, row: Int, column: Int)
 
   class LexicalAnalyzer(filename: String) {
+
+
     private var analyzeRes = ListBuffer[Token]()
     private var file: String = ""
     try {
@@ -21,6 +19,7 @@ package LexicalAnalyzer{
 
       var state = State(0, 0, 0, 1)
 
+      // tailrec
       while (state.iterator < file.length) {
         val ch = file.charAt(state.iterator)
         state = ch match {
@@ -129,7 +128,8 @@ package LexicalAnalyzer{
           Error = true
         }
         i += 2
-      } else if (i<file.length && '$' == file.charAt(i)){ //if this is assembly file declaration
+      }
+      else if (i<file.length && '$' == file.charAt(i)){ //if this is assembly file declaration
         i += 1
         currColumn = i - column
         if (i<file.length && ' ' == file.charAt(i)){
@@ -169,12 +169,11 @@ package LexicalAnalyzer{
           println("Assembly file declaration error: no whitespace (" + row + ", " + currColumn + ")")
           i = file.length
         }
-      } else { analyzeRes += Token(4, row, i - column) } // if there is only parentheses
+      }
+      else { analyzeRes += Token(4, row, i - column) } // if there is only parentheses
 
       State(i, column, currColumn, row)
     }
-
-
 
     def getFile: String = file
 
