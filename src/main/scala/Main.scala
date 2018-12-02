@@ -14,10 +14,10 @@ object Main extends App{
     printTables()
     val sa = new SyntaxAnalyzer(an.getAnalyzeRes)
     if (!Error){
-      sa.printTree
+//      sa.printTree
       val cg = new CodeGenerator(sa.tree)
       if (!Error)
-        print(cg.code)
+//        print(cg.code)
     }
   }
 }
