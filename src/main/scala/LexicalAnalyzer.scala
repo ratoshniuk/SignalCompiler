@@ -105,74 +105,92 @@ package LexicalAnalyzer{
       State(i, column, currColumn, row)
     }
 
-    private def asOpenedParenthenes(state: State): State = {
+    private def asComment(state: State) : State = {
       var i = state.iterator
       val column = state.column
-      var currColumn = i - column
+      val currColumn = i - column
       var row = state.row
 
       i += 1
-      if (i < file.length && '*' == file.charAt(i)){ //if this is comment
-        i += 1
-        breakable{
-          while (i+1 < file.length ) {
-            if ('*' == file.charAt(i) && ')' == file.charAt(i+1))
-              break
-            if ('\n' == file.charAt(i))
-              row += 1
-            i += 1
-          }
-        }
-        if (i+1 >= file.length){
-          println("EOF found in comment block")
-          Error = true
-        }
-        i += 2
-      }
-      else if (i<file.length && '$' == file.charAt(i)){ //if this is assembly file declaration
-        i += 1
-        currColumn = i - column
-        if (i<file.length && ' ' == file.charAt(i)){
+      breakable{
+        while (i+1 < file.length ) {
+          if ('*' == file.charAt(i) && ')' == file.charAt(i+1))
+            break
+          if ('\n' == file.charAt(i))
+            row += 1
           i += 1
-          analyzeRes += Token(6, row, currColumn-2)
-          if (isInAlphabet(file.charAt(i).toUpper)){
-            var ident: String = ""
-            breakable{
-              while (i+2 < file.length &&
-                " $)" != file.charAt(i).toString + file.charAt(i+1).toString + file.charAt(i+2).toString){
-                if (isInAlphabet(file.charAt(i).toUpper) || isDigit(file.charAt(i)) || file.charAt(i) == '.')
-                  ident += file.charAt(i)
-                else {
-                  Error = true
-                  println("Assembly file identifier error: invalid ident. (" + row + ", " + currColumn + ")")
-                  i = file.length
-                  break()
-                }
-                i += 1
+        }
+      }
+      if (i+1 >= file.length){
+        println("EOF found in comment block")
+        Error = true
+      }
+      i += 2
+
+      State(i, column, currColumn, row)
+    }
+
+    private def asAsm(state: State) : State = {
+
+      var i = state.iterator
+      val column = state.column
+      val currColumn = i - column
+      val row = state.row
+
+      i += 1
+
+      if (i<file.length && ' ' == file.charAt(i)){
+        i += 1
+        analyzeRes += Token(6, row, currColumn-2)
+        if (isInAlphabet(file.charAt(i).toUpper)){
+          var ident: String = ""
+          breakable{
+            while (i+2 < file.length &&
+              " $)" != file.charAt(i).toString + file.charAt(i+1).toString + file.charAt(i+2).toString){
+              if (isInAlphabet(file.charAt(i).toUpper) || isDigit(file.charAt(i)) || file.charAt(i) == '.')
+                ident += file.charAt(i)
+              else {
+                Error = true
+                println("Assembly file identifier error: invalid ident. (" + row + ", " + currColumn + ")")
+                i = file.length
+                break()
               }
+              i += 1
             }
-            if(!Error && " $)" != file.charAt(i).toString + file.charAt(i+1).toString + file.charAt(i+2).toString){
-              Error = true
-              println("Assembly file identifier error: ' $)' expected. (" + row + ", " + currColumn + ")")
-            } else {
-              analyzeRes += Token(addIdentifier(ident), row, currColumn)
-              analyzeRes += Token(7, row, i-column)
-              i += 3
-            }
-          } else {
+          }
+          if(!Error && " $)" != file.charAt(i).toString + file.charAt(i+1).toString + file.charAt(i+2).toString){
             Error = true
-            println("Assembly file identifier error: invalid ident. (" + row + ", " + currColumn + ")")
-            i = file.length
+            println("Assembly file identifier error: ' $)' expected. (" + row + ", " + currColumn + ")")
+          } else {
+            analyzeRes += Token(addIdentifier(ident), row, currColumn)
+            analyzeRes += Token(7, row, i-column)
+            i += 3
           }
         } else {
           Error = true
-          println("Assembly file declaration error: no whitespace (" + row + ", " + currColumn + ")")
+          println("Assembly file identifier error: invalid ident. (" + row + ", " + currColumn + ")")
           i = file.length
         }
+      } else {
+        Error = true
+        println("Assembly file declaration error: no whitespace (" + row + ", " + currColumn + ")")
+        i = file.length
       }
-      else { analyzeRes += Token(4, row, i - column) } // if there is only parentheses
-
       State(i, column, currColumn, row)
+    }
+
+    private def asOpenedParenthenes(state: State): State = {
+      var curState = state.copy(iterator = state.iterator + 1)
+      (curState.iterator, file.charAt(curState.iterator)) match {
+        case (i, ch) if i < file.length && '*' == ch =>
+          curState = asComment(curState)
+        case (i, ch) if i < file.length && '$' == ch =>
+          curState = asAsm(curState)
+        case _ =>
+          // if there is only parentheses
+          analyzeRes += Token(4, curState.row, curState.iterator - curState.column)
+      }
+      curState
     }
 
     def getFile: String = file

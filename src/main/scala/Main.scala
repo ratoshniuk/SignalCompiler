@@ -11,12 +11,12 @@ object Main extends App{
   val an = new LexicalAnalyzer("test.txt")
   if (!Error){
     an.printAnalyzeRes()
-    printTables()
+//    printTables()
     val sa = new SyntaxAnalyzer(an.getAnalyzeRes)
     if (!Error){
 //      sa.printTree
       val cg = new CodeGenerator(sa.tree)
-      if (!Error)
+//      if (!Error)
 //        print(cg.code)
     }
   }
